@@ -88,8 +88,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const fragmentSource = FRAGMENT_SOURCE
 
     let program = gl.createProgram()
-    compileAndAttachShader(gl, program, vertexSource, gl.VERTEX_SHADER)
-    compileAndAttachShader(gl, program, fragmentSource, gl.FRAGMENT_SHADER)
+    let status, error
+
+    [status, error] = compileAndAttachShader(gl, program, vertexSource, gl.VERTEX_SHADER)
+    if (!status) {
+        alert('error in vertex shader:', status, error)
+    }
+
+    [status, error] = compileAndAttachShader(gl, program, fragmentSource, gl.FRAGMENT_SHADER)
+    if (!status) {
+        alert('error in fragment shader:', status, error);
+    }
 
     gl.linkProgram(program)
     gl.useProgram(program)
@@ -98,8 +107,13 @@ document.addEventListener('DOMContentLoaded', () => {
     gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(coord)
 
-    const fps = 60
-    let t = 0
+    gl.clearColor(0, 0, 0, 1)
+    gl.clear(gl.COLOR_BUFFER_BIT)
+    gl.viewport(0, 0, canvas.width, canvas.height)
+
+    let t = 0, fps = 60
+
+    // function draw() {
     setInterval(() => {
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT)
@@ -114,5 +128,11 @@ document.addEventListener('DOMContentLoaded', () => {
         gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 
         t += 0.01
-    }, 1000 / fps)
+    }, 1000 / fps);
+
+        // window.requestAnimationFrame(draw)
+    // }
+
+    // window.requestAnimationFrame(draw)
+    // setTimeout(() => window.requestAnimationFrame(draw), 1000)
 })
