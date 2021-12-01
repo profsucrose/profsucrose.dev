@@ -1,3 +1,3 @@
 # profsucrose.dev
 
-Personal site
+Personal website for [profsucrose.dev](https://profsucrose.dev)

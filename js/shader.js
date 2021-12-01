@@ -4,401 +4,119 @@ precision mediump float;
 uniform vec2 resolution;
 uniform float time;
 
-// 8x8 bitmap font
-bool font(int ch, int x, int y) {
-    // macro expands to include the x parameter
-    #define row(colY, r0, r1, r2, r3, r4, r5, r6, r7) if (y == colY) return (x == 0 ? r0 : (x == 1 ? r1 : (x == 2 ? r2 : (x == 3 ? r3 : (x == 4 ? r4 : (x == 5 ? r5 : (x == 6 ? r6 : r7))))))) == 1;
+ivec2 char_a = ivec2(0x3f333300, 0xc1e3333);
+ivec2 char_b = ivec2(0x66663f00, 0x3f66663e);
+ivec2 char_c = ivec2(0x3663c00, 0x3c660303);
+ivec2 char_d = ivec2(0x66361f00, 0x1f366666);
+ivec2 char_e = ivec2(0x16467f00, 0x7f46161e);
+ivec2 char_f = ivec2(0x16060f00, 0x7f46161e);
+ivec2 char_g = ivec2(0x73667c00, 0x3c660303);
+ivec2 char_h = ivec2(0x33333300, 0x3333333f);
+ivec2 char_i = ivec2(0xc0c1e00, 0x1e0c0c0c);
+ivec2 char_j = ivec2(0x33331e00, 0x78303030);
+ivec2 char_k = ivec2(0x36666700, 0x6766361e);
+ivec2 char_l = ivec2(0x46667f00, 0xf060606);
+ivec2 char_m = ivec2(0x6b636300, 0x63777f7f);
+ivec2 char_n = ivec2(0x73636300, 0x63676f7b);
+ivec2 char_o = ivec2(0x63361c00, 0x1c366363);
+ivec2 char_p = ivec2(0x6060f00, 0x3f66663e);
+ivec2 char_q = ivec2(0x3b1e3800, 0x1e333333);
+ivec2 char_r = ivec2(0x36666700, 0x3f66663e);
+ivec2 char_s = ivec2(0x38331e00, 0x1e33070e);
+ivec2 char_t = ivec2(0xc0c1e00, 0x3f2d0c0c);
+ivec2 char_u = ivec2(0x33333f00, 0x33333333);
+ivec2 char_v = ivec2(0x331e0c00, 0x33333333);
+ivec2 char_w = ivec2(0x7f776300, 0x6363636b);
+ivec2 char_x = ivec2(0x1c366300, 0x6363361c);
+ivec2 char_y = ivec2(0xc0c1e00, 0x3333331e);
+ivec2 char_z = ivec2(0x4c667f00, 0x7f633118);
+ivec2 char_per = ivec2(0xc0c00, 0x0);
+ivec2 char_esc = ivec2(0x18001800, 0x183c3c18);
 
-    if(ch == 65) {// A 
-        row(7, 0, 0, 1, 1, 0, 0, 0, 0);
-        row(6, 0, 1, 1, 1, 1, 0, 0, 0);
-        row(5, 1, 1, 0, 0, 1, 1, 0, 0);
-        row(4, 1, 1, 0, 0, 1, 1, 0, 0);
-        row(3, 1, 1, 1, 1, 1, 1, 0, 0);
-        row(2, 1, 1, 0, 0, 1, 1, 0, 0);
-        row(1, 1, 1, 0, 0, 1, 1, 0, 0);
-        row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 66) {// B 
-        row(7, 1, 1, 1, 1, 1, 1, 0, 0);
-        row(6, 0, 1, 1, 0, 0, 1, 1, 0);
-        row(5, 0, 1, 1, 0, 0, 1, 1, 0);
-        row(4, 0, 1, 1, 1, 1, 1, 0, 0);
-        row(3, 0, 1, 1, 0, 0, 1, 1, 0);
-        row(2, 0, 1, 1, 0, 0, 1, 1, 0);
-        row(1, 1, 1, 1, 1, 1, 1, 0, 0);
-        row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 67) {// C 
-		row(7, 0, 0, 1, 1, 1, 1, 0, 0);
-		row(6, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(5, 1, 1, 0, 0, 0, 0, 0, 0);
-		row(4, 1, 1, 0, 0, 0, 0, 0, 0);
-		row(3, 1, 1, 0, 0, 0, 0, 0, 0);
-		row(2, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(1, 0, 0, 1, 1, 1, 1, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 68) {// D 
-		row(7, 1, 1, 1, 1, 1, 0, 0, 0);
-		row(6, 0, 1, 1, 0, 1, 1, 0, 0);
-		row(5, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(4, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(3, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(2, 0, 1, 1, 0, 1, 1, 0, 0);
-		row(1, 1, 1, 1, 1, 1, 0, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 69) {// E 
-		row(7, 1, 1, 1, 1, 1, 1, 1, 0);
-		row(6, 0, 1, 1, 0, 0, 0, 1, 0);
-		row(5, 0, 1, 1, 0, 1, 0, 0, 0);
-		row(4, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(3, 0, 1, 1, 0, 1, 0, 0, 0);
-		row(2, 0, 1, 1, 0, 0, 0, 1, 0);
-		row(1, 1, 1, 1, 1, 1, 1, 1, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 70) {// F 
-		row(7, 1, 1, 1, 1, 1, 1, 1, 0);
-		row(6, 0, 1, 1, 0, 0, 0, 1, 0);
-		row(5, 0, 1, 1, 0, 1, 0, 0, 0);
-		row(4, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(3, 0, 1, 1, 0, 1, 0, 0, 0);
-		row(2, 0, 1, 1, 0, 0, 0, 0, 0);
-		row(1, 1, 1, 1, 1, 0, 0, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 71) {// G 
-		row(7, 0, 0, 1, 1, 1, 1, 0, 0);
-		row(6, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(5, 1, 1, 0, 0, 0, 0, 0, 0);
-		row(4, 1, 1, 0, 0, 0, 0, 0, 0);
-		row(3, 1, 1, 0, 0, 1, 1, 1, 0);
-		row(2, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(1, 0, 0, 1, 1, 1, 1, 1, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 72) {// H 
-		row(7, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(6, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(5, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(4, 1, 1, 1, 1, 1, 1, 0, 0);
-		row(3, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(2, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(1, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 73) {// I 
-		row(7, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(6, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(5, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(4, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(3, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(2, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(1, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 74) {// J 
-		row(7, 0, 0, 0, 1, 1, 1, 1, 0);
-		row(6, 0, 0, 0, 0, 1, 1, 0, 0);
-		row(5, 0, 0, 0, 0, 1, 1, 0, 0);
-		row(4, 0, 0, 0, 0, 1, 1, 0, 0);
-		row(3, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(2, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(1, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 75) {// K 
-		row(7, 1, 1, 1, 0, 0, 1, 1, 0);
-		row(6, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(5, 0, 1, 1, 0, 1, 1, 0, 0);
-		row(4, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(3, 0, 1, 1, 0, 1, 1, 0, 0);
-		row(2, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(1, 1, 1, 1, 0, 0, 1, 1, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 76) {// L 
-		row(7, 1, 1, 1, 1, 0, 0, 0, 0);
-		row(6, 0, 1, 1, 0, 0, 0, 0, 0);
-		row(5, 0, 1, 1, 0, 0, 0, 0, 0);
-		row(4, 0, 1, 1, 0, 0, 0, 0, 0);
-		row(3, 0, 1, 1, 0, 0, 0, 1, 0);
-		row(2, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(1, 1, 1, 1, 1, 1, 1, 1, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 77) {// M 
-		row(7, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(6, 1, 1, 1, 0, 1, 1, 1, 0);
-		row(5, 1, 1, 1, 1, 1, 1, 1, 0);
-		row(4, 1, 1, 1, 1, 1, 1, 1, 0);
-		row(3, 1, 1, 0, 1, 0, 1, 1, 0);
-		row(2, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(1, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 78) {// N 
-		row(7, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(6, 1, 1, 1, 0, 0, 1, 1, 0);
-		row(5, 1, 1, 1, 1, 0, 1, 1, 0);
-		row(4, 1, 1, 0, 1, 1, 1, 1, 0);
-		row(3, 1, 1, 0, 0, 1, 1, 1, 0);
-		row(2, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(1, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 79) {// O 
-		row(7, 0, 0, 1, 1, 1, 0, 0, 0);
-		row(6, 0, 1, 1, 0, 1, 1, 0, 0);
-		row(5, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(4, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(3, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(2, 0, 1, 1, 0, 1, 1, 0, 0);
-		row(1, 0, 0, 1, 1, 1, 0, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 80) {// P 
-		row(7, 1, 1, 1, 1, 1, 1, 0, 0);
-		row(6, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(5, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(4, 0, 1, 1, 1, 1, 1, 0, 0);
-		row(3, 0, 1, 1, 0, 0, 0, 0, 0);
-		row(2, 0, 1, 1, 0, 0, 0, 0, 0);
-		row(1, 1, 1, 1, 1, 0, 0, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 81) {// Q 
-		row(7, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(6, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(5, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(4, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(3, 1, 1, 0, 1, 1, 1, 0, 0);
-		row(2, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(1, 0, 0, 0, 1, 1, 1, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 82) {// R 
-		row(7, 1, 1, 1, 1, 1, 1, 0, 0);
-		row(6, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(5, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(4, 0, 1, 1, 1, 1, 1, 0, 0);
-		row(3, 0, 1, 1, 0, 1, 1, 0, 0);
-		row(2, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(1, 1, 1, 1, 0, 0, 1, 1, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 83) {// S 
-		row(7, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(6, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(5, 1, 1, 1, 0, 0, 0, 0, 0);
-		row(4, 0, 1, 1, 1, 0, 0, 0, 0);
-		row(3, 0, 0, 0, 1, 1, 1, 0, 0);
-		row(2, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(1, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 84) {// T 
-		row(7, 1, 1, 1, 1, 1, 1, 0, 0);
-		row(6, 1, 0, 1, 1, 0, 1, 0, 0);
-		row(5, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(4, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(3, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(2, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(1, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 85) {// U 
-		row(7, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(6, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(5, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(4, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(3, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(2, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(1, 1, 1, 1, 1, 1, 1, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 86) {// V 
-		row(7, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(6, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(5, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(4, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(3, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(2, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(1, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 87) {// W 
-		row(7, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(6, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(5, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(4, 1, 1, 0, 1, 0, 1, 1, 0);
-		row(3, 1, 1, 1, 1, 1, 1, 1, 0);
-		row(2, 1, 1, 1, 0, 1, 1, 1, 0);
-		row(1, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 88) {// X 
-		row(7, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(6, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(5, 0, 1, 1, 0, 1, 1, 0, 0);
-		row(4, 0, 0, 1, 1, 1, 0, 0, 0);
-		row(3, 0, 0, 1, 1, 1, 0, 0, 0);
-		row(2, 0, 1, 1, 0, 1, 1, 0, 0);
-		row(1, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 89) {// Y 
-		row(7, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(6, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(5, 1, 1, 0, 0, 1, 1, 0, 0);
-		row(4, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(3, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(2, 0, 0, 1, 1, 0, 0, 0, 0);
-		row(1, 0, 1, 1, 1, 1, 0, 0, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 90) {// Z 
-		row(7, 1, 1, 1, 1, 1, 1, 1, 0);
-		row(6, 1, 1, 0, 0, 0, 1, 1, 0);
-		row(5, 1, 0, 0, 0, 1, 1, 0, 0);
-		row(4, 0, 0, 0, 1, 1, 0, 0, 0);
-		row(3, 0, 0, 1, 1, 0, 0, 1, 0);
-		row(2, 0, 1, 1, 0, 0, 1, 1, 0);
-		row(1, 1, 1, 1, 1, 1, 1, 1, 0);
-		row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 33) { // !
-        row(7, 0, 0, 0, 1, 1, 0, 0, 0);
-        row(6, 0, 0, 1, 1, 1, 1, 0, 0);
-        row(5, 0, 0, 1, 1, 1, 1, 0, 0);
-        row(4, 0, 0, 0, 1, 1, 0, 0, 0);
-        row(3, 0, 0, 0, 1, 1, 0, 0, 0);
-        row(2, 0, 0, 0, 0, 0, 0, 0, 0);
-        row(1, 0, 0, 0, 1, 1, 0, 0, 0);
-        row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    if(ch == 46) { // .
-        row(7, 0, 0, 0, 0, 0, 0, 0, 0);
-        row(6, 0, 0, 0, 0, 0, 0, 0, 0);
-        row(5, 0, 0, 0, 0, 0, 0, 0, 0);
-        row(4, 0, 0, 0, 0, 0, 0, 0, 0);
-        row(3, 0, 0, 0, 0, 0, 0, 0, 0);
-        row(2, 0, 0, 1, 1, 0, 0, 0, 0);
-        row(1, 0, 0, 1, 1, 0, 0, 0, 0);
-        row(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-
-    // unreachable
+bool bit(int byte, int x) {
+    int shifted = byte / int(pow(2.0, float(x)));
+    return (shifted - 2 * (shifted / 2)) == 1;
 }
 
-// janky psuedo char array
-int string(int i) {
-    #define CH(j, ch) if (i == j) return ch;
-
-    CH(0, 87);
-    CH(1, 69);
-    CH(2, 76);
-    CH(3, 67);
-    CH(4, 79);
-    CH(5, 77);
-    CH(6, 69);
-    CH(7, 32);
-    CH(8, 84);
-    CH(9, 79);
-    CH(10, 32);
-    CH(11, 77);
-    CH(12, 89);
-    CH(13, 32);
-    CH(14, 74);
-    CH(15, 65);
-    CH(16, 78);
-    CH(17, 75);
-    CH(18, 89);
-    CH(19, 32);
-    CH(20, 87);
-    CH(21, 69);
-    CH(22, 66);
-    CH(23, 80);
-    CH(24, 65);
-    CH(25, 71);
-    CH(26, 69);
-    CH(27, 32);
-    CH(28, 79);
-    CH(29, 78);
-    CH(30, 32);
-    CH(31, 80);
-    CH(32, 82);
-    CH(33, 79);
-    CH(34, 70);
-    CH(35, 83);
-    CH(36, 85);
-    CH(37, 67);
-    CH(38, 82);
-    CH(39, 79);
-    CH(40, 83);
-    CH(41, 69);
-    CH(42, 46);
-    CH(43, 68);
-    CH(44, 69);
-    CH(45, 86);
-    CH(46, 33);
-    CH(47, 32);
-
-    return 0;
+bool char(ivec2 ch, int x, int y) {
+    int sampleY = int(mod(float(y), 4.0));
+    return bit(y >= 4 ? ch.y : ch.x, sampleY * 8 + x);
 }
 
-mat4 rotationMatrix(vec3 axis, float angle) {
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-    
-    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-                0.0,                                0.0,                                0.0,                                1.0);
-}
-
-vec3 rotate(vec3 v, vec3 axis, float angle) {
-	mat4 m = rotationMatrix(axis, angle);
-	return (m * vec4(v, 1.0)).xyz;
+ivec2 string(int i) {
+    if (i == 0) return char_w;
+    if (i == 1) return char_e;
+    if (i == 2) return char_l;
+    if (i == 3) return char_c;
+    if (i == 4) return char_o;
+    if (i == 5) return char_m;
+    if (i == 6) return char_e;
+    // SPACE: if (i == 7) return char_ ;
+    if (i == 8) return char_t;
+    if (i == 9) return char_o;
+    // SPACE: if (i == 10) return char_ ;
+    if (i == 11) return char_m;
+    if (i == 12) return char_y;
+    // SPACE: if (i == 13) return char_ ;
+    if (i == 14) return char_j;
+    if (i == 15) return char_a;
+    if (i == 16) return char_n;
+    if (i == 17) return char_k;
+    if (i == 18) return char_y;
+    // SPACE: if (i == 19) return char_ ;
+    if (i == 20) return char_w;
+    if (i == 21) return char_e;
+    if (i == 22) return char_b;
+    if (i == 23) return char_p;
+    if (i == 24) return char_a;
+    if (i == 25) return char_g;
+    if (i == 26) return char_e;
+    // SPACE: if (i == 27) return char_ ;
+    if (i == 28) return char_o;
+    if (i == 29) return char_n;
+    // SPACE: if (i == 30) return char_ ;
+    if (i == 31) return char_p;
+    if (i == 32) return char_r;
+    if (i == 33) return char_o;
+    if (i == 34) return char_f;
+    if (i == 35) return char_s;
+    if (i == 36) return char_u;
+    if (i == 37) return char_c;
+    if (i == 38) return char_r;
+    if (i == 39) return char_o;
+    if (i == 40) return char_s;
+    if (i == 41) return char_e;
+    if (i == 42) return char_per;
+    if (i == 43) return char_d;
+    if (i == 44) return char_e;
+    if (i == 45) return char_v;
+    if (i == 46) return char_esc;
 }
 
 vec3 textBuffer(vec2 fragCoord) {
     float size = 20.0;
     
     ivec2 coord = ivec2(int(fragCoord.x), int(fragCoord.y));
-
     int y = (int(resolution.y) - coord.y) / int(size);
-    int x = int(mod(float(coord.x / int(size)) - floor(time * 10.0 * float(y) / 100.0) - float(y), 48.0));
-
+    int x = int(mod(float(coord.x / int(size)) + time * mod(float(y), 2.0) * 2.0, 48.0));
     int charPixelX = int(mod(float(coord.x), size) / (size / 8.0));
     int charPixelY = int(mod(float(coord.y), size) / (size / 8.0));
-    
-    int ch = string(x);
    
-    bool isFilled = font(ch, charPixelX, charPixelY);
-
+    bool isFilled = char(string(x), charPixelX, charPixelY);
     vec3 col = isFilled ? vec3(1.0) : vec3(0.0); // black if filled, white otherwise
-
     return col;
 }
 
 void main() {
-    // float sampleX = gl_FragCoord.x + time * 10.0 + cos(time) * 20.0;
-    // float sampleY = gl_FragCoord.y + sin(time) * 50.0;
+    vec2 sampleCoord = gl_FragCoord.xy;
+    sampleCoord.y /= mix(0.9, 2.0, (sin(sampleCoord.x / 300.0 + time / 2.0) + 1.0) / 2.0);
+    sampleCoord.x /= mix(0.9, 2.0, (sin(sampleCoord.y / 300.0 + time / 2.0) + 1.0) / 2.0);
 
-    vec3 sampleCoord = rotate(vec3(gl_FragCoord.x + cos(time) * 20.0, gl_FragCoord.y + sin(time) * 50.0, 0.0), vec3(2.0, 1.0, 0.3), 50.8);
-
-    // vec2 sampleCoord = gl_FragCoord.xy;
-
-    vec3 col = textBuffer(sampleCoord.xy);
+    vec3 col = textBuffer(sampleCoord);
 
     vec2 uv = gl_FragCoord.xy / resolution.xy;
 	vec4 rainbow = 0.5+0.5*vec4(cos(time+uv.xyx+vec3(0, 2, 4)),1.0);
-    
+
     gl_FragColor = vec4(col * rainbow.xyz, 1.0);
 }
 `

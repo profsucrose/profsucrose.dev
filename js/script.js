@@ -31,6 +31,11 @@ function resizeElementToWindow(element) {
 }
 
 const fortunes = FORTUNES.split('%')
+
+/**
+ * Fetches random UNIX fortune
+ * @returns {String} fortune
+ */
 function getFortune() {
     return fortunes[Math.floor(Math.random() * fortunes.length)].trim()
 }
@@ -51,15 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // load WebGL
     const gl = canvas.getContext('webgl')
     if (gl == null) {
-        alert('Your browser does not support WebGL')
+        alert('Your browser does not support WebGL; try switching or updating your browser!')
         return
     }
 
     const vertices = [
         -1, -1, 0,
         -1,  1, 0,
-            1, -1, 0,
-            1,  1, 0
+         1, -1, 0,
+         1,  1, 0
     ]
 
     const indices = [0, 1, 2, 1, 3, 2]
@@ -88,17 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fragmentSource = FRAGMENT_SOURCE
 
     let program = gl.createProgram()
-    let status, error
 
-    [status, error] = compileAndAttachShader(gl, program, vertexSource, gl.VERTEX_SHADER)
-    if (!status) {
-        alert('error in vertex shader:', status, error)
-    }
-
-    [status, error] = compileAndAttachShader(gl, program, fragmentSource, gl.FRAGMENT_SHADER)
-    if (!status) {
-        alert('error in fragment shader:', status, error);
-    }
+    compileAndAttachShader(gl, program, vertexSource, gl.VERTEX_SHADER)
+    compileAndAttachShader(gl, program, fragmentSource, gl.FRAGMENT_SHADER)
 
     gl.linkProgram(program)
     gl.useProgram(program)
@@ -107,14 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
     gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(coord)
 
-    gl.clearColor(0, 0, 0, 1)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-    gl.viewport(0, 0, canvas.width, canvas.height)
-
-    let t = 0, fps = 60
-
-    // function draw() {
-    setInterval(() => {
+    let t = 0
+    const draw = () => {
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT)
         gl.viewport(0, 0, canvas.width, canvas.height)
@@ -128,11 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
         gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 
         t += 0.01
-    }, 1000 / fps);
 
-        // window.requestAnimationFrame(draw)
-    // }
+        window.requestAnimationFrame(draw)
+    }
 
-    // window.requestAnimationFrame(draw)
-    // setTimeout(() => window.requestAnimationFrame(draw), 1000)
+    window.requestAnimationFrame(draw)
 })
