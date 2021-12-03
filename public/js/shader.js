@@ -32,6 +32,7 @@ ivec2 char_y = ivec2(0xc0c1e00, 0x3333331e);
 ivec2 char_z = ivec2(0x4c667f00, 0x7f633118);
 ivec2 char_per = ivec2(0xc0c00, 0x0);
 ivec2 char_esc = ivec2(0x18001800, 0x183c3c18);
+ivec2 char_space = ivec2(0, 0);
 
 bool bit(int byte, int x) {
     int shifted = byte / int(pow(2.0, float(x)));
@@ -51,19 +52,19 @@ ivec2 string(int i) {
     if (i == 4) return char_o;
     if (i == 5) return char_m;
     if (i == 6) return char_e;
-    // SPACE: if (i == 7) return char_ ;
+    if (i == 7) return char_space;
     if (i == 8) return char_t;
     if (i == 9) return char_o;
-    // SPACE: if (i == 10) return char_ ;
+    if (i == 10) return char_space;
     if (i == 11) return char_m;
     if (i == 12) return char_y;
-    // SPACE: if (i == 13) return char_ ;
+    if (i == 13) return char_space;
     if (i == 14) return char_j;
     if (i == 15) return char_a;
     if (i == 16) return char_n;
     if (i == 17) return char_k;
     if (i == 18) return char_y;
-    // SPACE: if (i == 19) return char_ ;
+    if (i == 19) return char_space;
     if (i == 20) return char_w;
     if (i == 21) return char_e;
     if (i == 22) return char_b;
@@ -71,10 +72,10 @@ ivec2 string(int i) {
     if (i == 24) return char_a;
     if (i == 25) return char_g;
     if (i == 26) return char_e;
-    // SPACE: if (i == 27) return char_ ;
+    if (i == 27) return char_space;
     if (i == 28) return char_o;
     if (i == 29) return char_n;
-    // SPACE: if (i == 30) return char_ ;
+    if (i == 30) return char_space;
     if (i == 31) return char_p;
     if (i == 32) return char_r;
     if (i == 33) return char_o;
@@ -91,6 +92,7 @@ ivec2 string(int i) {
     if (i == 44) return char_e;
     if (i == 45) return char_v;
     if (i == 46) return char_esc;
+    if (i == 47) return char_space;
 }
 
 vec3 textBuffer(vec2 fragCoord) {
