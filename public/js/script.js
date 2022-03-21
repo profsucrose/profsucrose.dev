@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(coord)
 
-    let t = 0
+    let t = Math.random() * 1000
     const draw = () => {
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT)
