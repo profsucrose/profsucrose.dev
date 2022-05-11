@@ -1,4 +1,3 @@
-const FRAGMENT_SOURCE = `
 precision mediump float;
 
 uniform vec2 resolution;
@@ -45,16 +44,16 @@ bool char(ivec2 ch, int x, int y) {
 }
 
 ivec2 string(int i) {
-    if (i == 0) return char_w;
-    if (i == 1) return char_e;
-    if (i == 2) return char_l;
-    if (i == 3) return char_c;
-    if (i == 4) return char_o;
-    if (i == 5) return char_m;
-    if (i == 6) return char_e;
-    if (i == 7) return char_space;
-    if (i == 8) return char_t;
-    if (i == 9) return char_o;
+    if (i == 0)  return char_w;
+    if (i == 1)  return char_e;
+    if (i == 2)  return char_l;
+    if (i == 3)  return char_c;
+    if (i == 4)  return char_o;
+    if (i == 5)  return char_m;
+    if (i == 6)  return char_e;
+    if (i == 7)  return char_space;
+    if (i == 8)  return char_t;
+    if (i == 9)  return char_o;
     if (i == 10) return char_space;
     if (i == 11) return char_m;
     if (i == 12) return char_y;
@@ -121,4 +120,3 @@ void main() {
 
     gl_FragColor = vec4(col * rainbow.xyz, 1.0);
 }
-`

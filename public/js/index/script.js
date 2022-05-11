@@ -40,7 +40,7 @@ function getFortune() {
     return fortunes[Math.floor(Math.random() * fortunes.length)].trim()
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // load fortune
     const fortune = document.querySelector('.main__fortune')
     fortune.innerText = `${getFortune()}`
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `
 
     // import fragment shader from other JS
-    const fragmentSource = FRAGMENT_SOURCE
+    const fragmentSource = await (await fetch('glsl/index/welcome.frag')).text()
 
     let program = gl.createProgram()
 
