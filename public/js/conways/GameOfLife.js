@@ -10,11 +10,10 @@ class Program {
     async build() {
         const [ vertexSource, fragmentSource ] = await getShaderSources(this.vertex, this.fragment)
 
-        let [ vertexStatus, vertexMessage ] = compileAndAttachShader(this.gl, this.shaderProgram, vertexSource, this.gl.VERTEX_SHADER)
+        const [ vertexStatus, vertexMessage ] = compileAndAttachShader(this.gl, this.shaderProgram, vertexSource, this.gl.VERTEX_SHADER)
         if (!vertexStatus) console.error(vertexMessage)
 
-        console.log(this.gl, this.shaderProgram, fragmentSource, this.gl.FRAGMENT_SHADER)
-        let [ fragmentStatus, fragmentMessage ] = compileAndAttachShader(this.gl, this.shaderProgram, fragmentSource, this.gl.FRAGMENT_SHADER)
+        const [ fragmentStatus, fragmentMessage ] = compileAndAttachShader(this.gl, this.shaderProgram, fragmentSource, this.gl.FRAGMENT_SHADER)
         if (!fragmentStatus) console.error(fragmentMessage)
 
         this.gl.linkProgram(this.shaderProgram)
@@ -63,12 +62,10 @@ class GameOfLife {
         const gl = this.gl
 
         this.programs = await Program.buildProgramMap({
-            quad: new Program(gl, 'quad.vert', 'quad.frag'),
-            copy: new Program(gl, 'quad.vert', 'copy.frag'),
+            quad: new Program(gl, 'quad.vert', 'life.frag'),
+            copy: new Program(gl, 'quad.vert', 'display.frag'),
             init: new Program(gl, 'quad.vert', 'init.frag')
         })
-
-        console.log(this.programs)
 
         this.step_framebuffer = gl.createFramebuffer()
 
@@ -88,10 +85,10 @@ class GameOfLife {
 
         gl.bindTexture(gl.TEXTURE_2D, tex)
 
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
         // By default WebGL will fill null texture with all 0s
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height,
@@ -100,12 +97,45 @@ class GameOfLife {
         return tex
     }
 
+    set(x, y, isAlive) {
+        const gl = this.gl
+
+        gl.bindTexture(gl.TEXTURE_2D, this.textures.front)
+        
+        const value = isAlive * 255
+
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, 1, 1,
+            gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([value, value, value, 255]))
+    }
+
     display() {
         const gl = this.gl
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.bindTexture(gl.TEXTURE_2D, this.textures.front)
-        this.drawToCurrentFramebuffer(this.programs.copy)
+
+        const program = this.programs.copy
+
+        // TODO: Clean up and move to separate method/refactor
+        // drawToCurrentFramebuffer()
+        program.use()
+
+        const coord = program.getAttribLocation('coords')
+        gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 2 * 4, 0)
+        gl.enableVertexAttribArray(coord)
+
+        gl.clearColor(0, 0, 0, 1)
+        gl.clear(gl.COLOR_BUFFER_BIT)
+        
+        gl.viewport(0, 0, this.canvas.width, this.canvas.height)
+
+        const resolution = program.getUniformLocation('resolution')
+        gl.uniform2fv(resolution, [this.canvas.width, this.canvas.height])
+
+        const time = program.getUniformLocation('time')
+        gl.uniform1f(time, this.time)
+
+        gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0)
     }
 
     drawToCurrentFramebuffer(program) {
@@ -120,7 +150,7 @@ class GameOfLife {
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT)
         
-        gl.viewport(0, 0, this.canvas.width, this.canvas.height)
+        gl.viewport(0, 0, this.width, this.height)
 
         const resolution = program.getUniformLocation('resolution')
         gl.uniform2fv(resolution, [this.width, this.height])
@@ -164,8 +194,6 @@ class GameOfLife {
         const time = this.programs.quad.getUniformLocation('time')
         gl.uniform1f(time, this.time)
 
-        console.log(this.time)
-
         this.drawToCurrentFramebuffer(this.programs.quad)
         this.swap()
 
@@ -197,6 +225,5 @@ class GameOfLife {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-
     }
 }

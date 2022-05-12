@@ -1,3 +1,5 @@
+let GOL
+
 document.addEventListener('DOMContentLoaded', async () => {
     // load canvas
     const canvas = document.querySelector('canvas')
@@ -9,14 +11,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         return
     }
     
-    console.log(gl.MAX_TEXTURE_SIZE)
-    
-    console.log(innerWidth, innerHeight)
     canvas.width = innerWidth
-    canvas.height = innerWidth
+    canvas.height = innerHeight
 
-    const GOL = new GameOfLife(gl, canvas, 16384, 16384)
+    GOL = new GameOfLife(gl, canvas, innerWidth, innerHeight)
     await GOL.build()
+
+    document.addEventListener('mousemove', event => {
+        const x = event.pageX
+        const y = event.pageY
+
+        const sampleX = Math.floor(x / innerWidth * GOL.width)
+        const sampleY = Math.floor(GOL.height - y / innerHeight * GOL.height)
+
+        console.log(sampleX, sampleY)
+
+        GOL.set(sampleX, sampleY, true)
+    })
 
     const draw = () => {
         GOL.step()
