@@ -16,6 +16,9 @@ firebase-debug.log*
 # it commented so all members can deploy to the same project(s) in .firebaserc.
 # .firebaserc
 
+# macOS
+.DS_Store
+
 # Runtime data
 pids
 *.pid
