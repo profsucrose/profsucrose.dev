@@ -105,7 +105,7 @@ class GameOfLife {
         const value = isAlive * 255
 
         gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, 1, 1,
-            gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([value, value, value, 255]))
+            gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]))
     }
 
     display() {

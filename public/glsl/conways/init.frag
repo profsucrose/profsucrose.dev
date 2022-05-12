@@ -12,8 +12,9 @@ float rand(vec2 coord) {
 void main() {
     float random = rand(seed + gl_FragCoord.xy);    
 
-    if (random > 0.8) {
+    if (random > 0.50) {
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        // gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     } else {
         gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     }
