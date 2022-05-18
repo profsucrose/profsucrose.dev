@@ -1,4 +1,3 @@
-let GOL
 
 document.addEventListener('DOMContentLoaded', async () => {
     // load canvas
@@ -14,40 +13,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     canvas.width = innerWidth
     canvas.height = innerHeight
 
-    GOL = new GameOfLife(gl, canvas, 100, 100)
+    GOL = new GameOfLife(gl, canvas, innerWidth, innerHeight)
     await GOL.build()
 
-    
-    let mouseIsDown = false
-    document.addEventListener('mousedown', () => mouseIsDown = true)
-    document.addEventListener('mouseup', () => mouseIsDown = false)
-
     document.addEventListener('mousemove', event => {
-        if (!mouseIsDown) return
-
         const x = event.pageX
         const y = event.pageY
 
         const sampleX = Math.floor(x / innerWidth * GOL.width)
         const sampleY = Math.floor(GOL.height - y / innerHeight * GOL.height)
 
-        // console.log(sampleX, sampleY)
+        console.log(sampleX, sampleY)
 
         GOL.set(sampleX, sampleY, true)
-        // GOL.set(sampleX + 1, sampleY, true)
-        // GOL.set(sampleX, sampleY - 1, true)
-        // GOL.set(sampleX, sampleY - 1, true)
-        // GOL.display()
+        GOL.set(sampleX + 1, sampleY, true)
+        GOL.set(sampleX, sampleY - 1, true)
+        GOL.set(sampleX + 1, sampleY - 1, true)
     })
 
+    const FPS = 60
     const draw = () => {
         GOL.step()
         GOL.display()
 
-        // window.requestAnimationFrame(draw)
+        setTimeout(() => window.requestAnimationFrame(draw), 1000 / FPS) // FPS
     }
 
-    // window.requestAnimationFrame(draw)
-
-    setInterval(draw, 1000 / 30)
+    window.requestAnimationFrame(draw)
 })
