@@ -16,7 +16,7 @@ async function start() {
     canvas.width = innerWidth
     canvas.height = innerHeight
 
-    GOL = new GameOfLife(gl, canvas, 10, 10)
+    GOL = new GameOfLife(gl, canvas, 20, 20)
     await GOL.build()
 
     const songs = [
@@ -30,7 +30,7 @@ async function start() {
         'Kanye West - POWER-L53gjP-TtGE.mp3',
         'Kanye West - Stronger-PsO6ZnUZI0g.mp3',
         'No Church In The Wild-FJt7gNi3Nr4.mp3'
-    ].map(path => new Audio(`media/kanyes/songs/${path}`))
+    ] //.map(path => new Audio(`media/kanyes/songs/${path}`))
 
     const get = (x, y) => buffer[(y * GOL.width + x) * 4] == 255
     audios = {}
@@ -39,7 +39,7 @@ async function start() {
 
     const createAudio = (x, y) => {
         // Clone loaded Audio instance
-        const audio = songs[Math.floor(Math.random() * songs.length)]
+        const audio = new Audio('media/kanyes/songs/' + songs[Math.floor(Math.random() * songs.length)])
         audio.currentTime = Math.floor(Math.random() * 100)
         audio.play()
         audios[[x, y]] = audio
