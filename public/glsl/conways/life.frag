@@ -20,12 +20,14 @@ void main() {
 
     float x = gl_FragCoord.x;
 
+    float current = float(get(0, 0));
+
     if (sum == 3) {
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
     } else if (sum == 2) {
-        float current = float(get(0, 0));
         gl_FragColor = vec4(current, current, current, 1.0);
     } else {
-        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        float col = 0.0;
+        gl_FragColor = vec4(col, col, col, 1.0);
     }
 }

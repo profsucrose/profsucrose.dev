@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     canvas.width = innerWidth
     canvas.height = innerHeight
 
-    GOL = new GameOfLife(gl, canvas, innerWidth, innerHeight)
+    GOL = new GameOfLife(gl, canvas, 300, Math.floor(innerHeight / innerWidth * 300))
     await GOL.build()
 
     document.addEventListener('mousemove', event => {
