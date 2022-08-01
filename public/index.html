@@ -26,6 +26,22 @@
             <div class="main__fortune-container"><h3 class="main__fortune"></h3></div>
             <a class="main__github" href="https://github.com/profsucrose">github.com/profsucrose</a>
             <a class="main__github" href="https://github.com/profsucrose/profsucrose.dev">repo for this website</a>
+            <div id="webring">
+                <h1 class="main__subtitle">Webring</h1>
+            </div>
         </main>
+        <script>
+            const webring = document.querySelector('#webring')
+            const hostname = 'profsucrose.dev'
+
+            fetch('https://raw.githubusercontent.com/JohnLins/Friends/main/friends.json')
+                .then(data => data.json())
+                .then(json => {
+                    for (const member of json.members) {
+                        if (member != hostname)
+                            webring.innerHTML += `<a class="main__github" href="https://${member}">${member}</a>`
+                    }
+                })
+        </script>
 	</body>
 </html>

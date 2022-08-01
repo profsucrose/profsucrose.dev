@@ -2,6 +2,7 @@ precision mediump float;
 
 uniform vec2 resolution;
 uniform float time;
+uniform float fontSize;
 
 ivec2 char_a = ivec2(0x3f333300, 0xc1e3333);
 ivec2 char_b = ivec2(0x66663f00, 0x3f66663e);
@@ -95,13 +96,11 @@ ivec2 string(int i) {
 }
 
 vec3 textBuffer(vec2 fragCoord) {
-    float size = 20.0;
-    
     ivec2 coord = ivec2(int(fragCoord.x), int(fragCoord.y));
-    int y = (int(resolution.y) - coord.y) / int(size);
-    int x = int(mod(float(coord.x / int(size)) + time * mod(float(y), 2.0) * 2.0, 48.0));
-    int charPixelX = int(mod(float(coord.x), size) / (size / 8.0));
-    int charPixelY = int(mod(float(coord.y), size) / (size / 8.0));
+    int y = (int(resolution.y) - coord.y) / int(fontSize);
+    int x = int(mod(float(coord.x / int(fontSize)) + time * mod(float(y), 2.0) * 2.0, 48.0));
+    int charPixelX = int(mod(float(coord.x), fontSize) / (fontSize / 8.0));
+    int charPixelY = int(mod(float(coord.y), fontSize) / (fontSize / 8.0));
    
     bool isFilled = char(string(x), charPixelX, charPixelY);
     vec3 col = isFilled ? vec3(1.0) : vec3(0.0); // black if filled, white otherwise
@@ -112,6 +111,7 @@ void main() {
     vec2 sampleCoord = gl_FragCoord.xy;
     sampleCoord.y /= mix(0.9, 2.0, (sin(sampleCoord.x / 300.0 + time / 2.0) + 1.0) / 2.0);
     sampleCoord.x /= mix(0.9, 2.0, (sin(sampleCoord.y / 300.0 + time / 2.0) + 1.0) / 2.0);
+    sampleCoord.x += time * 20.;
 
     vec3 col = textBuffer(sampleCoord);
 

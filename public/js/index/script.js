@@ -21,13 +21,20 @@
 	return [ true, null ]
 }
 
+let fontSize = calcFontSize(innerWidth, innerHeight)
+
+function calcFontSize(width, height) {
+    return Math.floor(Math.min(width, height) * 0.02)
+}
+
 /**
  * Resizes DOM Element to window innerWidth and innerHeight
  * @param {DOMElement} element 
  */
 function resizeElementToWindow(element) {
-    element.width = window.innerWidth - window.innerWidth % 20
-    element.height = window.innerHeight - window.innerHeight % 20
+    fontSize = calcFontSize(innerWidth, innerHeight)
+    element.width = window.innerWidth - window.innerWidth % fontSize
+    element.height = window.innerHeight - window.innerHeight % fontSize
 }
 
 const fortunes = FORTUNES.split('%')
@@ -112,6 +119,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const time = gl.getUniformLocation(program, 'time')
         gl.uniform1f(time, t)
+
+        const fontSizeLoc = gl.getUniformLocation(program, 'fontSize')
+        gl.uniform1f(fontSizeLoc, fontSize)
 
         const resolution = gl.getUniformLocation(program, 'resolution')
         gl.uniform2fv(resolution, [ canvas.width, canvas.height ])
