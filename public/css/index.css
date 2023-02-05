@@ -2,6 +2,7 @@ body {
     margin: 0;
     height: 100vh;
     position: relative;
+    font-size: 130%;
 }
 
 canvas {
@@ -23,15 +24,16 @@ canvas {
 }
 
 main .container {
+    max-width: 1000px;
     position: relative;
     display: flex;
-    gap: 50px;
+    width: 30em;
+    height: 20em;
     backdrop-filter: blur(4px);
     padding: 15px;
 }
 
 main section {
-    width: 300px;
     display: flex;
     flex-direction: column;
 }
@@ -61,7 +63,7 @@ main section {
 }
 
 .fortune-container {
-    height: 130px;
+    height: 9em;
 }
 
 .github {
