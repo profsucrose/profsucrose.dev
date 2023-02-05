@@ -42,7 +42,7 @@ main section {
 .profile-picture {
     width: 5em;
     max-width: 100px;
-    border: 0.1em solid white;
+    border: 0.13em solid white;
 }
 
 .title, .subtitle, .fortune, .github {
