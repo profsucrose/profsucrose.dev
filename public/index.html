@@ -12,6 +12,7 @@
 
         <!-- CSS -->
 		<link rel="stylesheet" href="css/index.css" />
+        <link rel="stylesheet" href="https://necolas.github.io/normalize.css/8.0.1/normalize.css" />
     
         <!-- JS -->
         <script src="js/index/fortune.js" defer></script>
@@ -19,29 +20,19 @@
 	</head>
 	<body>
         <canvas></canvas>
-        <main>
-            <h1 class="main__title"><i>profsucrose.dev</i></h1>
-            <img class="main__profile-picture" src="img/profile-picture.png" alt="profile" />
-            <h3 class="main__subtitle">amateur incompetent, bloat enjoyer, jank enthusiast</h3>
-            <div class="main__fortune-container"><h3 class="main__fortune"></h3></div>
-            <a class="main__github" href="https://github.com/profsucrose">github.com/profsucrose</a>
-            <a class="main__github" href="https://github.com/profsucrose/profsucrose.dev">repo for this website</a>
-            <div id="webring">
-                <h1 class="main__subtitle">Webring</h1>
+        <main id="main">
+            <div class="container">
+                <section>
+                    <h1 class="title"><i>profsucrose.dev</i></h1>
+                    <h3 class="subtitle">amateur incompetent, bloat enjoyer, jank enthusiast</h3>
+                    <div class="fortune-container"><h3 class="fortune"></h3></div>
+                    <a class="github" href="https://github.com/profsucrose">github.com/profsucrose</a>
+                    <a class="github" href="https://github.com/profsucrose/profsucrose.dev">repo for this website</a>
+                </section>
+                <aside>
+                    <img class="profile-picture" src="img/profile-picture.png" alt="profile" />
+                </aside>
             </div>
         </main>
-        <script>
-            const webring = document.querySelector('#webring')
-            const hostname = 'profsucrose.dev'
-
-            fetch('https://raw.githubusercontent.com/JohnLins/Friends/main/friends.json')
-                .then(data => data.json())
-                .then(json => {
-                    for (const member of json.members) {
-                        if (member != hostname)
-                            webring.innerHTML += `<a class="main__github" href="https://${member}">${member}</a>`
-                    }
-                })
-        </script>
 	</body>
 </html>

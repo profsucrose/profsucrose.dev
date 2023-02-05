@@ -49,7 +49,7 @@ function getFortune() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     // load fortune
-    const fortune = document.querySelector('.main__fortune')
+    const fortune = document.querySelector('.fortune')
     fortune.innerText = `${getFortune()}`
 
     // load canvas
@@ -111,7 +111,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(coord)
 
+    const fps = 80
+
     let t = Math.random() * 1000
+
     const draw = () => {
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT)
@@ -130,8 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         t += 0.01
 
-        window.requestAnimationFrame(draw)
+        setTimeout(() => window.requestAnimationFrame(draw), 1000/fps)
     }
 
-    window.requestAnimationFrame(draw)
+    setTimeout(() => window.requestAnimationFrame(draw), 1000/fps)
 })
