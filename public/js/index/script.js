@@ -24,7 +24,7 @@
 let fontSize = calcFontSize(innerWidth, innerHeight)
 
 function calcFontSize(width, height) {
-    return Math.floor(Math.min(width, height) * 0.02)
+    return Math.floor(Math.min(width, height) * 0.03)
 }
 
 /**

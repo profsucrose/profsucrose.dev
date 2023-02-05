@@ -2,7 +2,7 @@ body {
     margin: 0;
     height: 100vh;
     position: relative;
-    font-size: 130%;
+    font-size: calc(min(2.2vw, 120%));
 }
 
 canvas {
@@ -30,6 +30,7 @@ main .container {
     width: 30em;
     height: 20em;
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     padding: 15px;
 }
 
@@ -39,8 +40,9 @@ main section {
 }
 
 .profile-picture {
-    width: 100px;
-    border: 3px solid white;
+    width: 5em;
+    max-width: 100px;
+    border: 0.1em solid white;
 }
 
 .title, .subtitle, .fortune, .github {
@@ -67,5 +69,5 @@ main section {
 }
 
 .github {
-    margin: 5px 5px;
+    margin: 0.5em 0 0.2em 0em;
 } 
