@@ -13,6 +13,12 @@ canvas {
     background-color: black;
 }
 
+.header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
 #main {
     position: relative;
     width: 100%;
@@ -27,7 +33,7 @@ main .container {
     max-width: 1000px;
     position: relative;
     display: flex;
-    width: 30em;
+    width: 20em;
     height: 20em;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -56,7 +62,7 @@ main section {
 }
 
 .subtitle {
-    margin: 0;
+    margin: 15px 0 0 0;
 }
 
 .fortune {
