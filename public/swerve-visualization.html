@@ -47,8 +47,9 @@
 	    		this.vx += rotatedRelativeForceX * time
 	    		this.vy += rotatedRelativeForceY * time
 
-	    		// r x F
-	    		this.omega += (relativeOriginX * relativeForceY - relativeOriginY * relativeForceX) * time
+	    		// Ia = r x F
+			const inertia = this.width**4/12 * 0.1
+	    		this.omega += (relativeOriginX * relativeForceY - relativeOriginY * relativeForceX)/inertia * time
 	    	}
 
 	    	drawWorld() {
@@ -191,7 +192,7 @@
 	    		transY *= transSpeed/transNorm
 	    	}
 
-	    	const rot = 0.1
+	    	const rot = 10
 
 	    	let rotationSpeed = 0
 	    	if (keysHeld.KeyE) rotationSpeed += rot
