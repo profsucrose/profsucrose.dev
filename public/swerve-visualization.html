@@ -1,0 +1,215 @@
+<html>
+    <h1>Swerve Drive Visualization</h1>
+    <p>WASD to "drive", Q/E to rotate</p>
+    <div>
+	    <label>Field-oriented</label>
+	    <input type="checkbox" id="field-oriented"></input>
+    </div>
+    <canvas style="border: 1px solid black;"></canvas>
+    <script>
+        const canvas = document.querySelector('canvas')
+        const ctx = canvas.getContext('2d')
+
+	    canvas.width = 500
+	    canvas.height = 500
+
+	    const FPS = 60
+	    const deltaTick = 1/FPS
+
+	    const worldWidth = 100
+	    const worldHeight = 100
+
+	    const friction = 0.99
+
+	    class Robot {
+	    	constructor(width, height, x, y, angle) {
+	    		this.x = x
+	    		this.y = y
+	    		this.angle = angle
+	    		this.omega = 0
+	    		this.vx = 0
+	    		this.vy = 0
+	    		this.width = width
+	    		this.height = height
+	    		this.modules = [
+	    			new SwerveModule(this, width/2, height/2, 0, 0),
+	    			new SwerveModule(this, width/2, -height/2, 0, 0),
+	    			new SwerveModule(this, -width/2, height/2, 0, 0),
+	    			new SwerveModule(this, -width/2, -height/2, 0, 0)
+	    		]
+	    	}
+
+	    	applyWork(relativeOriginX, relativeOriginY, relativeForceX, relativeForceY, time) {
+			// Rotate force to still be in "chassis space" but absolute with respect to robot angle
+	    		const rotatedRelativeForceX = relativeForceX * Math.cos(this.angle) - relativeForceY * Math.sin(this.angle)
+	    		const rotatedRelativeForceY = relativeForceX * Math.sin(this.angle) + relativeForceY * Math.cos(this.angle)
+
+	    		this.vx += rotatedRelativeForceX * time
+	    		this.vy += rotatedRelativeForceY * time
+
+	    		// r x F
+	    		this.omega += (relativeOriginX * relativeForceY - relativeOriginY * relativeForceX) * time
+	    	}
+
+	    	drawWorld() {
+	    		ctx.save()
+
+	    		ctx.translate(this.x, this.y)
+	    		ctx.rotate(this.angle)
+
+	    		ctx.beginPath()
+	    		ctx.rect(-this.width/2, -this.height/2, this.width, this.height)
+	    		ctx.stroke()
+
+	    		this.modules.forEach(module => module.drawLocal())
+
+	    		ctx.restore()
+	    	}
+
+	    	tick() {
+	    		this.modules.forEach(module => module.tick())
+
+	    		this.vx *= friction
+	    		this.vy *= friction
+	    		this.omega *= friction
+
+	    		this.x += this.vx * deltaTick
+	    		this.y += this.vy * deltaTick
+	    		this.angle += this.omega * deltaTick
+	    	}
+
+	    	drive(transX, transY, rotationSpeed) {
+	    		this.modules.forEach(module =>
+	    			module.update(transX, transY, rotationSpeed))
+	    	}
+	    }
+
+	    class SwerveModule {
+	    	constructor(robot, relX, relY, x, y) {
+	    		this.robot = robot
+	    		this.relX = relX
+	    		this.relY = relY
+	    		this.x = x
+	    		this.y = y
+
+	    		const relNorm = Math.hypot(relX, relY)
+
+	    		this.rotX = -relY/relNorm
+	    		this.rotY = relX/relNorm
+	    	}
+
+	    	drawLocal() {
+	    		const vecColor = '#0f0'
+	    		const wheelColor = '#000'
+
+	    		ctx.save()
+
+	    		ctx.translate(this.relX, this.relY)
+
+	    		ctx.beginPath()
+	    		ctx.strokeStyle = vecColor
+	    		ctx.moveTo(0, 0)
+	    		ctx.lineTo(this.x, this.y)
+	    		ctx.stroke()
+
+	    		ctx.restore()
+	    	}
+
+	    	update(transX, transY, rotationSpeed) {
+	    		const rotatedTransX = transX * Math.cos(-this.robot.angle) - transY * Math.sin(-this.robot.angle)
+	    		const rotatedTransY = transX * Math.sin(-this.robot.angle) + transY * Math.cos(-this.robot.angle)
+
+			const fieldOriented = document.querySelector('#field-oriented').checked
+
+	    		this.x = (fieldOriented ? rotatedTransX : transX) + this.rotX * rotationSpeed
+	    		this.y = (fieldOriented ? rotatedTransY : transY) + this.rotY * rotationSpeed
+	    	}
+
+	    	tick() {
+			this.robot.applyWork(this.relX, this.relY, this.x, this.y, deltaTick)
+	    	}
+	    }
+
+
+
+	    const robot = new Robot(10, 10, 50, 50, 0)
+
+	    function draw() {
+	    	ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+	    	// Draw entities (robot)
+	    	ctx.save()
+
+	    	ctx.scale(canvas.width/worldWidth, canvas.height/worldHeight)
+
+	    	robot.drawWorld()
+
+	    	ctx.restore()
+	    	
+	    	// Text
+	    	ctx.font = "20px sans-serif"
+	    	ctx.fillText(`Velocity: (${robot.vx.toFixed(2)}, ${robot.vy.toFixed(2)})`, 10, 30)
+	    	ctx.fillText(`Angular Velocity: ${(robot.omega * 180/Math.PI).toFixed(2)} deg/s`, 10, 60)
+	    }
+
+	    function tick() {
+	    	robot.tick()
+
+	    	// robot.applyWork(5, 5, 1, -1, 1/FPS * 0.001)
+	    	// robot.applyWork(-5, -5, -1, 1, 1/FPS * 0.001)
+	    }
+
+	    const keysHeld = {
+	    	KeyW: false,
+	    	KeyA: false,
+	    	KeyS: false,
+	    	KeyD: false,
+	    	KeyQ: false,
+	    	KeyE: false,
+	    }
+
+	    document.addEventListener('keydown', event => { const code = event.code; if (code in keysHeld) keysHeld[code] = true; })
+	    document.addEventListener('keyup',   event => { const code = event.code; if (code in keysHeld) keysHeld[code] = false; })
+
+	    function handleInput() {
+	    	let transX = 0
+	    	let transY = 0
+
+	    	if (keysHeld.KeyW) transY += 1
+	    	if (keysHeld.KeyA) transX -= 1
+	    	if (keysHeld.KeyS) transY -= 1
+	    	if (keysHeld.KeyD) transX += 1
+
+	    	const transSpeed = 10
+
+	    	transY *= -1
+
+	    	let transNorm = Math.hypot(transX, transY)
+
+	    	if (transNorm > 1e-6) {
+	    		transX *= transSpeed/transNorm
+	    		transY *= transSpeed/transNorm
+	    	}
+
+	    	const rot = 0.1
+
+	    	let rotationSpeed = 0
+	    	if (keysHeld.KeyE) rotationSpeed += rot
+	    	if (keysHeld.KeyQ) rotationSpeed -= rot
+
+	    	console.log(transX, transY, rotationSpeed)
+	    	robot.drive(transX, transY, rotationSpeed)
+
+	    }
+
+	    function loop() {
+	    	handleInput()
+	    	tick()
+	    	draw()
+
+	    	setTimeout(() => requestAnimationFrame(loop), 1000/FPS)
+	    }
+
+	    loop()
+    </script>
+</html>
