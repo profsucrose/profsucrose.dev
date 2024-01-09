@@ -3,23 +3,63 @@
     <p>WASD to "drive", Q/E to rotate</p>
     <div>
 	    <label>Field-oriented</label>
-	    <input type="checkbox" id="field-oriented"></input>
+	    <input type="checkbox" id="field-oriented" checked></input>
+    </div>
+    <div>
+	    <label>Follow path</label>
+	    <input type="checkbox" id="follow-path"></input>
+    </div>
+    <div>
+	    <label>Draw heading arrow</label>
+	    <input type="checkbox" id="heading-arrow" checked></input>
+    </div>
+    <div>
+	    <label>Hold in place</label>
+	    <input type="checkbox" id="hold"></input>
+    </div>
+    <div>
+	    <label>Optimize swerve</label>
+	    <input type="checkbox" id="optimize-steering" checked></input>
     </div>
     <canvas style="border: 1px solid black;"></canvas>
+    <script>if (location.href.includes('#asteroids')) location.href = 'asteroids'</script>
     <script>
+        // Throw error on casting NaN to a number for debugging
+        Object.prototype.originalValueOf = Object.prototype.valueOf;
+
+        Object.prototype.valueOf = function() {
+          if (typeof this !== 'number') {
+                      debugger
+            throw new Error('Object is not a Number');
+          }
+
+          return this.originalValueOf();
+        }
+        //
+
         const canvas = document.querySelector('canvas')
         const ctx = canvas.getContext('2d')
 
-	    canvas.width = 500
-	    canvas.height = 500
+	    canvas.width = 800
+	    canvas.height = 800
 
 	    const FPS = 60
 	    const deltaTick = 1/FPS
 
-	    const worldWidth = 100
-	    const worldHeight = 100
+	    let worldWidth = 200
+	    let worldHeight = 200
 
-	    const friction = 0.99
+	    const friction = 0.96
+
+        const pathSamples = 100
+        const path1 = [...Array(pathSamples)].map((_, i) => {
+            const t = i/(pathSamples - 1)
+            const theta = t * 2 * Math.PI + Math.PI/6
+            const r = 50 * Math.cos(theta) * Math.cos(3 * theta)
+            const x = Math.cos(theta) * r
+            const y = Math.sin(theta) * r
+            return [t, [x + worldWidth/2, y + worldHeight/2]]
+        })
 
 	    class Robot {
 	    	constructor(width, height, x, y, angle) {
@@ -29,38 +69,77 @@
 	    		this.omega = 0
 	    		this.vx = 0
 	    		this.vy = 0
+                this.maxSpeed = 20
 	    		this.width = width
 	    		this.height = height
+                const track = width * 0.6
+                const wheelbase = height * 0.6
 	    		this.modules = [
-	    			new SwerveModule(this, width/2, height/2, 0, 0),
-	    			new SwerveModule(this, width/2, -height/2, 0, 0),
-	    			new SwerveModule(this, -width/2, height/2, 0, 0),
-	    			new SwerveModule(this, -width/2, -height/2, 0, 0)
+	    			new SwerveModule(this, track/2, wheelbase/2, 0, 0),
+	    			new SwerveModule(this, track/2, -wheelbase/2, 0, 0),
+	    			new SwerveModule(this, -track/2, wheelbase/2, 0, 0),
+	    			new SwerveModule(this, -track/2, -wheelbase/2, 0, 0)
 	    		]
+                this.driving = false
 	    	}
 
-	    	applyWork(relativeOriginX, relativeOriginY, relativeForceX, relativeForceY, time) {
-			// Rotate force to still be in "chassis space" but absolute with respect to robot angle
+
+	    	applyImpulse(relativeOriginX, relativeOriginY, relativeForceX, relativeForceY, time) {
+                const holdInPlace = document.querySelector('#hold').checked
+                if (holdInPlace) return
+
+				// Rotate force to still be in "chassis space" but absolute with respect to robot angle
 	    		const rotatedRelativeForceX = relativeForceX * Math.cos(this.angle) - relativeForceY * Math.sin(this.angle)
 	    		const rotatedRelativeForceY = relativeForceX * Math.sin(this.angle) + relativeForceY * Math.cos(this.angle)
+
+                // "Mass" of 1
 
 	    		this.vx += rotatedRelativeForceX * time
 	    		this.vy += rotatedRelativeForceY * time
 
-	    		// Ia = r x F
-			const inertia = this.width**4/12 * 0.1
+	    		// r x F
+                const inertia = this.width**4/12 * 0.1 /* Not sure how to make dp and domega be consistent while
+                    still feeling realistic? */ 
 	    		this.omega += (relativeOriginX * relativeForceY - relativeOriginY * relativeForceX)/inertia * time
 	    	}
 
 	    	drawWorld() {
 	    		ctx.save()
 
-	    		ctx.translate(this.x, this.y)
-	    		ctx.rotate(this.angle)
+                const holdInPlace = document.querySelector('#hold').checked
+                if (!holdInPlace) {
+                    ctx.translate(this.x, this.y)
+                    ctx.rotate(this.angle)
+                }
 
 	    		ctx.beginPath()
 	    		ctx.rect(-this.width/2, -this.height/2, this.width, this.height)
 	    		ctx.stroke()
+
+                const drawArrow = document.querySelector('#heading-arrow').checked
+
+                if (drawArrow) {
+                    ctx.save()
+
+                    ctx.lineWidth = 0.5
+                    ctx.beginPath()
+                    ctx.moveTo(8, 0)
+                    ctx.lineTo(14, 0)
+                    ctx.stroke()
+
+
+                    const arrowWidth = 1
+
+                    ctx.beginPath()
+                    ctx.moveTo(15, 0)
+                    ctx.lineTo(12, arrowWidth)
+                    ctx.lineTo(12, -arrowWidth)
+                    ctx.lineTo(15, 0)
+                    ctx.closePath()
+                    ctx.fill()
+
+                    ctx.restore()
+                }
 
 	    		this.modules.forEach(module => module.drawLocal())
 
@@ -77,6 +156,10 @@
 	    		this.x += this.vx * deltaTick
 	    		this.y += this.vy * deltaTick
 	    		this.angle += this.omega * deltaTick
+                this.angle = modBetween(this.angle, -Math.PI, Math.PI)
+
+                // TODO: Clean up
+                // this.modules.forEach(module => { module.driving = this.driving })
 	    	}
 
 	    	drive(transX, transY, rotationSpeed) {
@@ -85,6 +168,76 @@
 	    	}
 	    }
 
+		// Mods angle to be from -180 - 180 degrees
+		function modBetween(x, minValue, maxValue) {
+            const modulus = maxValue - minValue
+
+            // Wrap input if it's above the maximum input
+            const numMax = Math.floor((x - minValue) / modulus);
+            x -= numMax * modulus;
+
+            // Wrap input if it's below the minimum input
+            // const numMin = Math.floor((x - maxValue) / modulus);
+            // x -= numMin * modulus;
+
+            return x
+		}
+
+		function modAngleDeg(x) {
+			return modBetween(x, -180, 180)
+		}
+
+		class PIDController {
+			constructor(kP, kI, kD) {
+				this.kP = kP
+				this.kI = kI
+				this.kD = kD
+
+				this.positionError = 0
+				this.lastPosition = null
+				this.isContinuous = false
+			}
+
+			calculate(setpoint, current) {
+				let err
+
+			 	if (this.isContinuous) {
+			 		const moddedCurrent = modBetween(current, this.minValue, this.maxValue)
+
+                    const errForward = moddedCurrent - setpoint
+                    const errBackward = moddedCurrent + (this.maxValue - this.minValue) - setpoint
+			 		err = Math.abs(errForward) < Math.abs(errBackward) ? errForward : errBackward
+			     } else {
+			 		err = setpoint - current
+			     }
+
+				const output = this.kP * err
+					+ this.kI * this.positionError
+					+ (this.lastPosition !== null
+						? this.kD * (current - this.lastPosition)
+						: 0)
+
+				this.lastPosition = current
+				this.positionError += err	
+				return output
+			}
+
+			enableContinuousInput(minValue, maxValue) {
+				this.isContinuous = true
+				this.minValue = minValue
+				this.maxValue = maxValue
+			}
+
+			reset() {
+				this.positionError = 0
+				this.lastPosition = null
+			}
+		}
+
+		function toDegrees(rad) {
+			return rad * 180/Math.PI
+		}
+
 	    class SwerveModule {
 	    	constructor(robot, relX, relY, x, y) {
 	    		this.robot = robot
@@ -92,48 +245,108 @@
 	    		this.relY = relY
 	    		this.x = x
 	    		this.y = y
+                this.transX = 0
+                this.transY = 0
+                this.rotationSpeed = 0
+
+                this.driving = false
 
 	    		const relNorm = Math.hypot(relX, relY)
 
 	    		this.rotX = -relY/relNorm
 	    		this.rotY = relX/relNorm
+
+				this.angle = 0
+				this.targetAbsoluteAngle = 0
+				this.targetAngle = 0
+				this.steeringController = new PIDController(0.1, 0.0, 0.0)
+				this.steeringController.enableContinuousInput(-180, 180)
 	    	}
 
 	    	drawLocal() {
 	    		const vecColor = '#0f0'
 	    		const wheelColor = '#000'
+	    		const wheelTipColor = '#f00'
 
 	    		ctx.save()
 
 	    		ctx.translate(this.relX, this.relY)
 
-	    		ctx.beginPath()
-	    		ctx.strokeStyle = vecColor
-	    		ctx.moveTo(0, 0)
-	    		ctx.lineTo(this.x, this.y)
-	    		ctx.stroke()
+                if (this.driving) {
+                    ctx.beginPath()
+                    ctx.strokeStyle = vecColor
+                    ctx.moveTo(0, 0)
+                    ctx.lineTo(this.fx, this.fy)
+                    ctx.stroke()
+                }
+
+				ctx.beginPath()
+				ctx.strokeStyle = wheelColor
+				ctx.rotate(this.angle)
+				ctx.moveTo(-1, 0)
+				ctx.lineTo(1, 0)
+				ctx.stroke()
+
+				ctx.beginPath()
+				ctx.strokeStyle = wheelTipColor
+				ctx.moveTo(1, 0)
+				ctx.lineTo(-0.1, 0)
+				ctx.stroke()
 
 	    		ctx.restore()
 	    	}
 
 	    	update(transX, transY, rotationSpeed) {
-	    		const rotatedTransX = transX * Math.cos(-this.robot.angle) - transY * Math.sin(-this.robot.angle)
-	    		const rotatedTransY = transX * Math.sin(-this.robot.angle) + transY * Math.cos(-this.robot.angle)
-
-			const fieldOriented = document.querySelector('#field-oriented').checked
-
-	    		this.x = (fieldOriented ? rotatedTransX : transX) + this.rotX * rotationSpeed
-	    		this.y = (fieldOriented ? rotatedTransY : transY) + this.rotY * rotationSpeed
+                this.transX = transX
+                this.transY = transY
+                this.rotationSpeed = rotationSpeed
 	    	}
 
 	    	tick() {
-			this.robot.applyWork(this.relX, this.relY, this.x, this.y, deltaTick)
+                const absoluteTransX = this.transX * Math.cos(-this.robot.angle) - this.transY * Math.sin(-this.robot.angle)
+	    		const absoluteTransY = this.transX * Math.sin(-this.robot.angle) + this.transY * Math.cos(-this.robot.angle)
+
+                const fieldOriented = document.querySelector('#field-oriented').checked
+	    		const targetX = (fieldOriented ? absoluteTransX : this.transX) + this.rotX * this.rotationSpeed
+	    		const targetY = (fieldOriented ? absoluteTransY : this.transY) + this.rotY * this.rotationSpeed
+
+                this.driving = Math.hypot(targetX, targetY) > 1e-6
+
+                const optimizeSteering = document.querySelector('#optimize-steering').checked
+
+                if (this.driving) {
+                    // Calculate angle 
+                    this.targetAngle = Math.atan2(targetY, targetX)
+
+                    const errForward = this.angle - this.targetAngle
+                    const errBackward = this.angle + 2 * Math.PI - this.targetAngle
+
+                    this.targetX = Math.cos(this.targetAngle)
+                    this.targetY = Math.sin(this.targetAngle)
+
+                    if (optimizeSteering
+                            && Math.min(Math.abs(errForward), Math.abs(errBackward)) > Math.PI/2) {
+                        this.targetAngle = modAngleDeg(this.targetAngle + Math.PI)
+                    }
+
+
+                    // Drive wheel
+                    let dot = Math.cos(this.angle) * this.targetX + Math.sin(this.angle) * this.targetY
+
+                    this.fx = Math.cos(this.angle) * dot * this.robot.maxSpeed
+                    this.fy = Math.sin(this.angle) * dot * this.robot.maxSpeed
+                    this.robot.applyImpulse(this.relX, this.relY, this.fx, this.fy, deltaTick)
+                }
+
+				const output = this.steeringController.calculate(toDegrees(this.targetAngle), toDegrees(this.angle))
+                this.angle += -output * deltaTick /* Negate for CCW -> CW */ 
+                this.angle = modBetween(this.angle, -Math.PI, Math.PI)
 	    	}
 	    }
 
 
 
-	    const robot = new Robot(10, 10, 50, 50, 0)
+	    const robot = new Robot(10, 10, worldWidth/2, worldHeight/2, 0)
 
 	    function draw() {
 	    	ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -141,7 +354,18 @@
 	    	// Draw entities (robot)
 	    	ctx.save()
 
-	    	ctx.scale(canvas.width/worldWidth, canvas.height/worldHeight)
+            const holdInPlace = document.querySelector('#hold').checked
+
+            if (holdInPlace) { 
+                const w = 1.5 * robot.width
+                const h = 1.5 * robot.width
+                ctx.scale(canvas.width/w, canvas.height/h)
+                ctx.translate(w/2, h/2)
+            }
+	    	else ctx.scale(canvas.width/worldWidth, canvas.height/worldHeight)
+
+            const followPath = document.querySelector('#follow-path').checked
+            if (followPath) drawPath(path1)
 
 	    	robot.drawWorld()
 
@@ -151,13 +375,14 @@
 	    	ctx.font = "20px sans-serif"
 	    	ctx.fillText(`Velocity: (${robot.vx.toFixed(2)}, ${robot.vy.toFixed(2)})`, 10, 30)
 	    	ctx.fillText(`Angular Velocity: ${(robot.omega * 180/Math.PI).toFixed(2)} deg/s`, 10, 60)
+	    	ctx.fillText(`Robot Angle: ${(robot.angle * 180/Math.PI).toFixed(2)} deg`, 10, 90)
 	    }
 
 	    function tick() {
 	    	robot.tick()
 
-	    	// robot.applyWork(5, 5, 1, -1, 1/FPS * 0.001)
-	    	// robot.applyWork(-5, -5, -1, 1, 1/FPS * 0.001)
+	    	// robot.applyImpulse(5, 5, 1, -1, 1/FPS * 0.001)
+	    	// robot.applyImpulse(-5, -5, -1, 1, 1/FPS * 0.001)
 	    }
 
 	    const keysHeld = {
@@ -181,7 +406,7 @@
 	    	if (keysHeld.KeyS) transY -= 1
 	    	if (keysHeld.KeyD) transX += 1
 
-	    	const transSpeed = 10
+	    	const transSpeed = 1
 
 	    	transY *= -1
 
@@ -192,7 +417,7 @@
 	    		transY *= transSpeed/transNorm
 	    	}
 
-	    	const rot = 10
+	    	const rot = 1
 
 	    	let rotationSpeed = 0
 	    	if (keysHeld.KeyE) rotationSpeed += rot
@@ -200,14 +425,65 @@
 
 	    	console.log(transX, transY, rotationSpeed)
 	    	robot.drive(transX, transY, rotationSpeed)
-
 	    }
 
+        let time = 0
+        let followingPoint = [0, 0]
+
+
+        function lerp(a, b, t) {
+            return (1 - t) * a + t * b
+        }
+
+        function drawPath(path) {
+            ctx.beginPath()
+            const firstPoint = path[0][1]
+            ctx.moveTo(firstPoint[0], firstPoint[1])
+            path.forEach(([t, point]) => ctx.lineTo(point[0], point[1]))
+            ctx.stroke()
+
+            ctx.beginPath()
+            ctx.arc(followingPoint[0], followingPoint[1], 1, 0, 2 * Math.PI)
+            ctx.fill()
+        }
+
 	    function loop() {
-	    	handleInput()
+            const followPath = document.querySelector('#follow-path').checked
+
+            if (followPath) {
+                const path = path1
+                const endTime = 90
+                const horizon = 1
+                const t = ((time + horizon)  % endTime)/endTime
+
+                const pointBIndex = path.findIndex(p => p[0] >= t - 1e-6)
+                const pointAIndex = pointBIndex > 0 ? pointBIndex - 1 : path.length - 1
+
+                const [pointAT, pointA] = path[pointAIndex]
+                const [pointBT, pointB] = path[pointBIndex]
+
+
+                const intraT = (t-pointAT)/(pointBT-pointAT)
+                const x = lerp(pointA[0], pointB[0], intraT)
+                const y = lerp(pointA[1], pointB[1], intraT)
+
+                const dx = x - robot.x
+                const dy = y - robot.y
+
+                followingPoint[0] = x
+                followingPoint[1] = y
+
+                robot.drive(dx, dy, 10)
+                robot.maxSpeed = Math.hypot(dx, dy) * 0.5
+            } else {
+                robot.maxSpeed = 30
+                handleInput()
+            }
+
 	    	tick()
 	    	draw()
 
+            time += deltaTick
 	    	setTimeout(() => requestAnimationFrame(loop), 1000/FPS)
 	    }
 

@@ -1,0 +1,741 @@
+<html>
+    <style>body { padding: 0; margin: 0; }</style>
+    <canvas ></canvas>
+    <script>
+        // Throw error on casting NaN to a number for debugging
+        Object.prototype.originalValueOf = Object.prototype.valueOf;
+
+        Object.prototype.valueOf = function() {
+          if (typeof this !== 'number') {
+                      debugger
+            throw new Error('Object is not a Number');
+          }
+
+          return this.originalValueOf();
+        }
+        //
+
+        const canvas = document.querySelector('canvas')
+        const ctx = canvas.getContext('2d')
+
+	    canvas.width = 800
+	    canvas.height = 800
+
+	    const FPS = 60
+	    const deltaTick = 1/FPS
+
+	    let worldWidth = 200
+	    let worldHeight = 200
+
+	    const friction = 0.99
+
+        let gameOver = false
+
+        let score = 0
+
+        class Laser {
+            constructor(x, y, angle, speed) {
+                this.x = x
+                this.y = y
+                this.angle = angle
+                this.speed = speed
+                this.vx = Math.cos(angle)
+                this.vy = Math.sin(angle)
+                this.length = 1
+            }
+
+            drawWorld() {
+                ctx.save()
+                ctx.translate(this.x, this.y)
+                ctx.rotate(this.angle)
+                ctx.moveTo(0, 0)
+                ctx.lineTo(this.length, 0)
+                ctx.stroke()
+                ctx.restore()
+            }
+
+            tick() {
+                this.x += this.vx * this.speed * deltaTick
+                this.y += this.vy * this.speed * deltaTick
+            }
+        }
+
+        class Polygon {
+            constructor(x, y, nPoints, minRadius, maxRadius) {
+                this.points = []
+
+                let maxR = 0
+
+                for (let theta = 0; theta < 2 * Math.PI;) {
+                    theta += Math.random() * (2 * Math.PI)/nPoints + 3 * Math.PI/180
+                    const r = Math.random() * (maxRadius - minRadius) + minRadius
+                    this.points.push([Math.cos(theta) * r, Math.sin(theta) * r])
+                    maxR = Math.max(r, maxR)
+                }
+
+                this.x = x
+                this.y = y
+                this.maxR = maxR // For bounding box
+
+                const speed = 100
+
+                const tx = Math.random() * worldWidth - x
+                const ty = Math.random() * worldHeight - y
+
+                const tNorm = Math.hypot(tx, ty)
+
+                this.vx = tx/tNorm * speed
+                this.vy = ty/tNorm * speed
+            }
+
+            destroy(removeMe) {
+                this.removeMe = removeMe
+                this.destroyed = true
+                this.edges = []
+                for (let i = this.points.length - 1, j = 0; j <= this.points.length - 1; i = j, j++) {
+                    const a = this.points[i]
+                    const b = this.points[j]
+                    this.edges.push([[a[0], a[1]], [b[0], b[1]]])
+                }
+            }
+
+            tick() {
+                this.x += this.vx * deltaTick
+                this.y += this.vy * deltaTick
+            }
+
+            drawWorld() {
+                ctx.save()
+
+                ctx.translate(this.x, this.y)
+
+                if (this.destroyed) {
+                    for (const edge of this.edges) {
+                        const a = edge[0]
+                        const b = edge[1]
+
+                        ctx.beginPath()
+                        ctx.moveTo(...a)
+                        ctx.lineTo(...b)
+                        ctx.stroke()
+
+                        let centerX = (a[0] + b[0])/2
+                        let centerY = (a[1] + b[1])/2
+
+                        const aDx = a[0] - centerX
+                        const aDy = a[1] - centerY
+
+                        const bDx = b[0] - centerX
+                        const bDy = b[1] - centerY
+
+                        const n = Math.hypot(centerX, centerY)
+
+                        const speed = 100
+                        centerX += centerX/n * speed * deltaTick
+                        centerY += centerY/n * speed * deltaTick
+
+                        a[0] = centerX + aDx
+                        a[1] = centerY + aDy
+
+                        b[0] = centerX + bDx
+                        b[1] = centerY + bDy
+                    }
+
+                    if (this.points.every(p => p[0] < 0 || p[0] > worldWidth || p[1] < 0 || p[1] > worldHeight)) {
+                        this.removeMe()
+                    }
+                } else {
+
+                    ctx.beginPath()
+                    const firstPoint = this.points[0]
+
+                    ctx.moveTo(...firstPoint)
+
+                    this.points.slice(1).forEach(point => ctx.lineTo(...point))
+
+                    ctx.lineTo(...firstPoint)
+
+                    ctx.stroke()
+                }
+
+                ctx.restore()
+            }
+        }
+
+	    class Robot {
+	    	constructor(width, height, x, y, angle) {
+	    		this.x = x
+	    		this.y = y
+	    		this.angle = angle
+	    		this.omega = 0
+	    		this.vx = 0
+	    		this.vy = 0
+                this.maxSpeed = 20
+	    		this.width = width
+	    		this.height = height
+                const track = width * 0.6
+                const wheelbase = height * 0.6
+	    		this.modules = [
+	    			new SwerveModule(this, track/2, wheelbase/2, 0, 0),
+	    			new SwerveModule(this, track/2, -wheelbase/2, 0, 0),
+	    			new SwerveModule(this, -track/2, wheelbase/2, 0, 0),
+	    			new SwerveModule(this, -track/2, -wheelbase/2, 0, 0)
+	    		]
+                const halfWidth = this.width/2
+                const halfHeight = this.height/2
+                this.edges = [
+                    [[halfWidth, halfHeight], [halfWidth, -halfHeight]],
+                    [[-halfWidth, -halfHeight], [halfWidth, -halfHeight]],
+                    [[-halfWidth, -halfHeight], [-halfWidth, halfHeight]],
+                    [[-halfWidth, halfHeight], [halfWidth, halfHeight]],
+                ]
+                this.driving = false
+                this.destroyed = false
+	    	}
+
+            destroy() {
+                this.destroyed = true
+                gameOver = true
+            }
+
+	    	applyImpulse(relativeOriginX, relativeOriginY, relativeForceX, relativeForceY, time) {
+				// Rotate force to still be in "chassis space" but absolute with respect to robot angle
+	    		const rotatedRelativeForceX = relativeForceX * Math.cos(this.angle) - relativeForceY * Math.sin(this.angle)
+	    		const rotatedRelativeForceY = relativeForceX * Math.sin(this.angle) + relativeForceY * Math.cos(this.angle)
+
+                // "Mass" of 1
+
+	    		this.vx += rotatedRelativeForceX * time
+	    		this.vy += rotatedRelativeForceY * time
+
+	    		// r x F
+                const inertia = this.width**4/12 * 0.05 /* Not sure how to make dp and domega be consistent while
+                    still feeling realistic? */ 
+	    		this.omega += (relativeOriginX * relativeForceY - relativeOriginY * relativeForceX)/inertia * time
+	    	}
+
+	    	drawWorld() {
+	    		ctx.save()
+
+                ctx.translate(this.x, this.y)
+                ctx.rotate(this.angle)
+
+                if (this.destroyed) {
+                    for (const edge of this.edges) {
+                        const a = edge[0]
+                        const b = edge[1]
+
+                        ctx.beginPath()
+                        ctx.moveTo(...a)
+                        ctx.lineTo(...b)
+                        ctx.stroke()
+
+                        let centerX = (a[0] + b[0])/2
+                        let centerY = (a[1] + b[1])/2
+
+                        const aDx = a[0] - centerX
+                        const aDy = a[1] - centerY
+
+                        const bDx = b[0] - centerX
+                        const bDy = b[1] - centerY
+
+                        const n = Math.hypot(centerX, centerY)
+
+                        const speed = 100
+                        centerX += centerX/n * speed * deltaTick
+                        centerY += centerY/n * speed * deltaTick
+
+                        a[0] = centerX + aDx
+                        a[1] = centerY + aDy
+
+                        b[0] = centerX + bDx
+                        b[1] = centerY + bDy
+                    }
+
+                    ctx.restore()
+                    return
+                }
+
+	    		ctx.beginPath()
+	    		ctx.rect(-this.width/2, -this.height/2, this.width, this.height)
+	    		ctx.stroke()
+
+                ctx.save()
+
+                ctx.lineWidth = 0.5
+                ctx.beginPath()
+                ctx.moveTo(8, 0)
+                ctx.lineTo(14, 0)
+                ctx.stroke()
+
+
+                const arrowWidth = 1
+
+                ctx.fillStyle = '#fff'
+
+                ctx.beginPath()
+                ctx.moveTo(15, 0)
+                ctx.lineTo(12, arrowWidth)
+                ctx.lineTo(12, -arrowWidth)
+                ctx.lineTo(15, 0)
+                ctx.closePath()
+                ctx.fill()
+
+                ctx.restore()
+
+	    		this.modules.forEach(module => module.drawLocal())
+
+	    		ctx.restore()
+	    	}
+
+	    	tick() {
+	    		this.modules.forEach(module => module.tick())
+
+	    		this.vx *= friction
+	    		this.vy *= friction
+	    		this.omega *= friction
+
+	    		this.x += this.vx * deltaTick
+	    		this.y += this.vy * deltaTick
+	    		this.angle += this.omega * deltaTick
+                this.angle = modBetween(this.angle, -Math.PI, Math.PI)
+	    	}
+
+	    	drive(transX, transY, rotationSpeed) {
+                if (this.destroyed) return
+	    		this.modules.forEach(module =>
+	    			module.update(transX, transY, rotationSpeed))
+	    	}
+	    }
+
+		// Mods angle to be from -180 - 180 degrees
+		function modBetween(x, minValue, maxValue) {
+            const modulus = maxValue - minValue
+
+            // Wrap input if it's above the maximum input
+            const numMax = Math.floor((x - minValue) / modulus);
+            x -= numMax * modulus;
+
+            // Wrap input if it's below the minimum input
+            // const numMin = Math.floor((x - maxValue) / modulus);
+            // x -= numMin * modulus;
+
+            return x
+		}
+
+		function modAngleDeg(x) {
+			return modBetween(x, -180, 180)
+		}
+
+		class PIDController {
+			constructor(kP, kI, kD) {
+				this.kP = kP
+				this.kI = kI
+				this.kD = kD
+
+				this.positionError = 0
+				this.lastPosition = null
+				this.isContinuous = false
+			}
+
+			calculate(setpoint, current) {
+				let err
+
+			 	if (this.isContinuous) {
+			 		const moddedCurrent = modBetween(current, this.minValue, this.maxValue)
+
+                    const errForward = moddedCurrent - setpoint
+                    const errBackward = moddedCurrent + (this.maxValue - this.minValue) - setpoint
+			 		err = Math.abs(errForward) < Math.abs(errBackward) ? errForward : errBackward
+			     } else {
+			 		err = setpoint - current
+			     }
+
+				const output = this.kP * err
+					+ this.kI * this.positionError
+					+ (this.lastPosition !== null
+						? this.kD * (current - this.lastPosition)
+						: 0)
+
+				this.lastPosition = current
+				this.positionError += err	
+				return output
+			}
+
+			enableContinuousInput(minValue, maxValue) {
+				this.isContinuous = true
+				this.minValue = minValue
+				this.maxValue = maxValue
+			}
+
+			reset() {
+				this.positionError = 0
+				this.lastPosition = null
+			}
+		}
+
+		function toDegrees(rad) {
+			return rad * 180/Math.PI
+		}
+
+	    class SwerveModule {
+	    	constructor(robot, relX, relY, x, y) {
+	    		this.robot = robot
+	    		this.relX = relX
+	    		this.relY = relY
+	    		this.x = x
+	    		this.y = y
+                this.transX = 0
+                this.transY = 0
+                this.rotationSpeed = 0
+                this.momentum = 0
+
+                this.driving = false
+
+	    		const relNorm = Math.hypot(relX, relY)
+
+	    		this.rotX = -relY/relNorm
+	    		this.rotY = relX/relNorm
+
+				this.angle = 0
+				this.targetAbsoluteAngle = 0
+				this.targetAngle = 0
+				this.steeringController = new PIDController(0.1, 0.0, 0.0)
+				this.steeringController.enableContinuousInput(-180, 180)
+                this.driveController = new PIDController(5, 0, 0)
+	    	}
+
+	    	drawLocal() {
+	    		const vecColor = '#0f0'
+	    		const wheelColor = '#000'
+	    		const wheelTipColor = '#f00'
+
+	    		ctx.save()
+
+	    		ctx.translate(this.relX, this.relY)
+
+                if (this.driving) {
+                    ctx.beginPath()
+                    // ctx.strokeStyle = vecColor
+                    ctx.moveTo(0, 0)
+                    ctx.lineTo(this.fx, this.fy)
+                    ctx.stroke()
+                }
+
+				ctx.beginPath()
+				// ctx.strokeStyle = wheelColor
+				ctx.rotate(this.angle)
+				ctx.moveTo(-1, 0)
+				ctx.lineTo(1, 0)
+				ctx.stroke()
+
+				ctx.beginPath()
+				ctx.strokeStyle = '#000'
+                ctx.lineWidth = 0.5
+				ctx.moveTo(1, 0)
+				ctx.lineTo(-0.1, 0)
+				ctx.stroke()
+
+	    		ctx.restore()
+	    	}
+
+	    	update(transX, transY, rotationSpeed) {
+                this.transX = transX
+                this.transY = transY
+                this.rotationSpeed = rotationSpeed
+	    	}
+
+	    	tick() {
+                const absoluteTransX = this.transX * Math.cos(-this.robot.angle) - this.transY * Math.sin(-this.robot.angle)
+	    		const absoluteTransY = this.transX * Math.sin(-this.robot.angle) + this.transY * Math.cos(-this.robot.angle)
+
+	    		const targetX = absoluteTransX + this.rotX * this.rotationSpeed
+	    		const targetY = absoluteTransY + this.rotY * this.rotationSpeed
+
+                this.driving = Math.hypot(targetX, targetY) > 1e-6
+
+                if (this.driving) {
+                    // Calculate angle 
+                    this.targetAngle = Math.atan2(targetY, targetX)
+
+                    const errForward = this.angle - this.targetAngle
+                    const errBackward = this.angle + 2 * Math.PI - this.targetAngle
+
+                    this.targetX = Math.cos(this.targetAngle)
+                    this.targetY = Math.sin(this.targetAngle)
+
+                    if (Math.min(Math.abs(errForward), Math.abs(errBackward)) > Math.PI/2) {
+                        this.targetAngle = modAngleDeg(this.targetAngle + Math.PI)
+                    }
+
+
+                    // Drive wheel
+                    let dot = Math.cos(this.angle) * this.targetX + Math.sin(this.angle) * this.targetY
+
+
+                    const targetSpeed = dot * this.robot.maxSpeed
+                    const output = this.driveController.calculate(targetSpeed, this.momentum)
+                    this.momentum += output * deltaTick
+
+                    this.fx = Math.cos(this.angle) * this.momentum
+                    this.fy = Math.sin(this.angle) * this.momentum
+                    this.robot.applyImpulse(this.relX, this.relY, this.fx, this.fy, deltaTick)
+                }
+
+				const output = this.steeringController.calculate(toDegrees(this.targetAngle), toDegrees(this.angle))
+                this.angle += -output * deltaTick /* Negate for CCW -> CW */ 
+                this.angle = modBetween(this.angle, -Math.PI, Math.PI)
+	    	}
+	    }
+
+
+
+	    const robot = new Robot(10, 10, worldWidth/2, worldHeight/2, 0)
+        const polygons = []
+        const lasers = []
+
+        const nPolygons = 5
+
+        const polygonSpawnPadding = 100
+
+        function addPolygon() {
+            const x = Math.random() > 0.5 ? -Math.random() * polygonSpawnPadding : worldWidth + Math.random() * polygonSpawnPadding
+            const y = Math.random() > 0.5 ? -Math.random() * polygonSpawnPadding : worldHeight + Math.random() * polygonSpawnPadding
+
+            polygons.push(new Polygon(x, y, Math.floor(Math.random() * 5) + 10, Math.random() * 5 + 2, Math.random() * 10 + 5))
+        }
+
+        for (let i = 0; i < nPolygons; i++) {
+            addPolygon()
+        }
+
+        function linesIntersect(a, b, c, d, p, q, r, s) {
+            const det = (a - c) * (q - s) - (b - d) * (p - r)
+            if (det == 0) {
+                return false
+            } else {
+                const lambda = (-q * r + b * (r - p) + a * (q - s) + p * s) / det
+                return 0 <= lambda && lambda <= 1
+            }
+        }
+
+        function laserHitPolygon(laser, polygon) {
+            score += 1000
+
+            const points = polygon.points
+
+            for (let i = points.length - 1, j = 0; j < points.length; i = j, j++) {
+                const a = points[i]
+                const b = points[j]
+
+                const laserEndX = laser.x + Math.cos(laser.angle) * laser.length
+                const laserEndY = laser.y + Math.sin(laser.angle) * laser.length
+
+                if (linesIntersect(
+                        a[0] + polygon.x, a[1] + polygon.y,
+                        b[0] + polygon.x, b[1] + polygon.y,
+                        laser.x, laser.y,
+                        laserEndX, laserEndY)
+                ) {
+                    return true
+                }
+            }
+
+            return false
+        }
+
+        function polygonHitRobot(polygon, robot) {
+            return Math.abs(robot.x - polygon.x) < polygon.maxR && Math.abs(robot.y - polygon.y) < polygon.maxR
+
+            // for (let i = points.length - 1, j = 0; j < points.length; i = j, j++) {
+            //     const a = points[i]
+            //     const b = points[j]
+
+            //     for (const edge of robot.edges) {
+            //         const c = edge[0]
+            //         const d = edge[1]
+
+            //         if (linesIntersect(
+            //                 a[0] + polygon.x, a[1] + polygon.y,
+            //                 b[0] + polygon.x, b[1] + polygon.y,
+            //                 c[0] + robot.x,   c[1] + robot.y,
+            //                 d[0] + robot.x,   d[1] + robot.y)
+            //         ) {
+            //             console.log(a[0] + polygon.x, a[1] + polygon.y,
+            //                 b[0] + polygon.x, b[1] + polygon.y,
+            //                 c[0] + robot.x,   c[1] + robot.y,
+            //                 d[0] + robot.x,   d[1] + robot.y)
+            //             return true
+            //         }
+            //     }
+            // }
+        }
+
+        function tickPolygons() {
+            for (const polygon of polygons) {
+                if (polygon.destroyed) continue
+
+                if (polygonHitRobot(polygon, robot)) {
+                    robot.destroy()
+                    return
+                }
+
+                if (polygon.x < -polygonSpawnPadding || polygon.x > worldWidth + polygonSpawnPadding || polygon.y < -polygonSpawnPadding || polygon.y > worldHeight + polygonSpawnPadding) {
+                    polygons.splice(polygons.indexOf(polygon), 1)
+                    addPolygon()
+                    continue
+                }
+            }
+        }
+
+        function tickLasers() {
+            lasers.forEach(laser => {
+                laser.tick()
+                if (laser.x < 0 || laser.x > worldWidth || laser.y < 0 || laser.y > worldHeight) {
+                    lasers.splice(lasers.indexOf(laser), 1)
+                    return
+                }
+
+                for (const polygon of polygons) {
+                    if (polygon.destroyed) continue
+
+                    if (Math.abs(polygon.x - laser.x) > polygon.maxR
+                                || Math.abs(polygon.y - laser.y) > polygon.maxR
+                    ) {
+                        continue
+                    }
+                    if (laserHitPolygon(laser, polygon)) {
+                        const removeFromPolygons = () => polygons.splice(polygons.indexOf(polygon), 1)
+                        polygon.destroy(removeFromPolygons)
+                        lasers.splice(lasers.indexOf(laser), 1)
+                    }
+                }
+            })
+        }
+
+	    function draw() {
+            ctx.fillStyle = "#000"
+	    	ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+            ctx.strokeStyle = '#fff'
+
+	    	// Draw entities (robot)
+	    	ctx.save()
+
+	    	ctx.scale(canvas.width/worldWidth, canvas.height/worldHeight)
+
+	    	robot.drawWorld()
+
+            polygons.forEach(polygon => polygon.drawWorld())
+
+            lasers.forEach(laser => laser.drawWorld())
+
+	    	ctx.restore()
+
+            ctx.save()
+            ctx.fillStyle = '#fff'
+            ctx.font = "20px sans-serif"
+            ctx.fillText(score, 10, 30)
+            ctx.restore()
+	    }
+
+	    function tick() {
+	    	robot.tick()
+
+            polygons.forEach(polygon => polygon.tick())
+
+            tickLasers()
+            tickPolygons()
+
+	    	// robot.applyImpulse(5, 5, 1, -1, 1/FPS * 0.001)
+	    	// robot.applyImpulse(-5, -5, -1, 1, 1/FPS * 0.001)
+	    }
+
+	    const keysHeld = {
+	    	KeyW: false,
+	    	KeyA: false,
+	    	KeyS: false,
+	    	KeyD: false,
+	    	KeyQ: false,
+	    	KeyE: false,
+	    	Space: false,
+	    }
+
+	    document.addEventListener('keydown', event => { const code = event.code; if (code in keysHeld) keysHeld[code] = true; })
+	    document.addEventListener('keyup',   event => { const code = event.code; if (code in keysHeld) keysHeld[code] = false; })
+
+        let ticks = 0
+        let canShoot = true
+
+        function shoot() {
+            const laserSpeed = 100
+            const laser = new Laser(robot.x, robot.y, robot.angle, laserSpeed)
+            lasers.push(laser)
+        }
+
+	    function handleInput() {
+	    	let transX = 0
+	    	let transY = 0
+
+	    	if (keysHeld.KeyW) transY += 1
+	    	if (keysHeld.KeyA) transX -= 1
+	    	if (keysHeld.KeyS) transY -= 1
+	    	if (keysHeld.KeyD) transX += 1
+
+	    	const transSpeed = 1
+
+	    	transY *= -1
+
+	    	let transNorm = Math.hypot(transX, transY)
+
+	    	if (transNorm > 1e-6) {
+	    		transX *= transSpeed/transNorm
+	    		transY *= transSpeed/transNorm
+	    	}
+
+	    	const rot = 1
+
+	    	let rotationSpeed = 0
+	    	if (keysHeld.KeyE) rotationSpeed += rot
+	    	if (keysHeld.KeyQ) rotationSpeed -= rot
+
+            if (keysHeld.Space) {
+                if (canShoot) {
+                    canShoot = false
+                    shoot()
+                }
+            } else canShoot = true
+
+	    	robot.drive(transX, transY, rotationSpeed)
+	    }
+
+        function addAdditionalPolygon() {
+            addPolygon()
+            setTimeout(addAdditionalPolygon, 1000 + Math.random() * 10000)
+        }
+
+	    function loop() {
+            robot.maxSpeed = 30
+            handleInput()
+
+            worldHeight *= window.innerHeight / canvas.height
+            worldWidth *= window.innerWidth / canvas.width
+
+            canvas.width = window.innerWidth
+            canvas.height = window.innerHeight
+
+	    	tick()
+	    	draw()
+            
+            ticks += 1
+
+            if (!gameOver) score += 1
+
+	    	setTimeout(() => requestAnimationFrame(loop), 1000/FPS)
+	    }
+
+        addAdditionalPolygon()
+
+	    loop()
+    </script>
+</html>

@@ -1,26 +1,3 @@
-/**
- * Compiles shader and links to program, returns error if error
- * @param {WebGLRenderingContext} gl WebGL context
- * @param {WebGLProgram} program Shader program to attach to
- * @param {string} source Shader source code
- * @param {number} type Shader type
- * @return {Array} Status and error message (or null) of compilation
- */
-function compileAndAttachShader(gl, program, source, type) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-
-    const status = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if (!status) {
-        const error = gl.getShaderInfoLog(shader);
-        return [status, error.slice(0, error.length - 2)];
-    }
-
-    gl.attachShader(program, shader);
-    return [true, null];
-}
-
 let fontSize = calcFontSize(innerWidth, innerHeight);
 
 function calcFontSize(width, height) {
@@ -104,10 +81,29 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let program = gl.createProgram();
 
-    compileAndAttachShader(gl, program, vertexSource, gl.VERTEX_SHADER);
-    compileAndAttachShader(gl, program, fragmentSource, gl.FRAGMENT_SHADER);
+    const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vertexShader, vertexSource);
+    gl.compileShader(vertexShader);
+    if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+        throw `Error in compiling vertex shader: ${gl.getShaderInfoLog(vertexShader)}`;
+    }
+    gl.attachShader(program, vertexShader);
+
+    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fragmentShader, fragmentSource);
+    gl.compileShader(fragmentShader);
+    if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+        throw `Error in compiling fragment shader: ${gl.getShaderInfoLog(fragmentShader)}`;
+    }
+    gl.attachShader(program, fragmentShader);
 
     gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        throw `Error linking shaders: ${gl.getProgramInfoLog(program)}`
+    }
+
+
+
     gl.useProgram(program);
 
     const coord = gl.getAttribLocation(program, "coords");
